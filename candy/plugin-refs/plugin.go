@@ -19,6 +19,7 @@ package refs
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 
@@ -28,17 +29,22 @@ import (
 	"github.com/opencharly/spec/spec"
 )
 
+//go:embed schema/*.cue
+var schemaFS embed.FS
+
 const calver = "2026.192.0000"
 
 // NewProvider returns the refs provider — a pb.ProviderServer that ALSO implements
 // kit.RefsDownloader (the typed remote-repo download the host calls compiled-in).
 func NewProvider() pb.ProviderServer { return &provider{} }
 
-// NewMeta advertises the refs capability (Class "refs", word "refs").
+// NewMeta advertises the refs capability (Class "refs", word "refs") plus this plugin's
+// OWN self-contained CUE schema (schema/refs.cue) served over Describe — there is NO
+// schema-less plugin.
 func NewMeta() pb.PluginMetaServer {
 	return sdk.NewMeta(calver, []sdk.ProvidedCapability{
 		{Class: "refs", Word: "refs"},
-	}, nil)
+	}, schemaFS)
 }
 
 type provider struct {
